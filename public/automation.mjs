@@ -16,7 +16,7 @@ async function refresh(){
  for(const a of s.audit)add(audit,'li',new Date(a.ts).toISOString()+' · '+a.event+(a.job_id?' · '+a.job_id:''));
 }
 q('auto-connect').onclick=()=>{key=token.value;token.value='';void perform(async()=>{});};
-q('auto-stop').onclick=()=>void perform(()=>request('/stop',{stopped:true}));
+q('auto-stop').onclick=async()=>{try{await request('/stop',{stopped:true});status.textContent='Emergency stop activated. An already dispatched command may still execute.';await refresh();}catch(e){status.textContent='STOP NOT CONFIRMED: '+e.message;}};
 q('auto-arm').onclick=()=>{if(confirm('Arm rule evaluation? Each action still needs approval.'))void perform(()=>request('/stop',{stopped:false}));};
 kind.onchange=()=>{q('auto-schedule').hidden=kind.value!=='schedule';q('auto-condition').hidden=kind.value!=='condition';};
 q('auto-form').onsubmit=e=>{e.preventDefault();void perform(()=>request('/rules',{name:q('auto-name').value,kind:kind.value,entity:target.value,action:q('auto-action').value,time:q('auto-time').value,device:q('auto-device').value,metric:q('auto-metric').value,operator:q('auto-operator').value,threshold:Number(q('auto-threshold').value)}));};

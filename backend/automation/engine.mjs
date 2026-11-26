@@ -75,7 +75,7 @@ export function createEngine(db,config=automationConfig(),{fetcher=fetch,clock=D
  const j=db.prepare('SELECT j.*,r.enabled,r.entity,r.action,r.kind,r.spec FROM automation_jobs j JOIN automation_rules r ON r.id=j.rule_id WHERE j.id=?').get(id);
  if(!j||j.state!=='pending'||j.expires<=clock()||!j.enabled||!config.entities.includes(j.entity)||!light.test(j.entity)||!['turn_on','turn_off'].includes(j.action))throw Error('Approval no longer valid');
  if(j.kind==='condition'&&!trigger(j,clock()))throw Error('Condition no longer valid');
- if(db.prepare("SELECT 1 FROM automation_jobs WHERE state IN('executing','succeeded','simulated','failed','uncertain') AND id<>? AND created>?").get(id,clock()-MIN))throw Error('Command cooldown');
+ if(db.prepare("SELECT 1 FROM automation_audit WHERE event='approved' AND job_id<>? AND ts>?").get(id,clock()-MIN))throw Error('Command cooldown');
  db.prepare("UPDATE automation_jobs SET state='executing' WHERE id=?").run(id);audit('approved',j.rule_id,id);return j;
  });
  active=controller;let outcome='simulated';
@@ -84,7 +84,7 @@ export function createEngine(db,config=automationConfig(),{fetcher=fetch,clock=D
  if(stopped()||controller.signal.aborted)throw Error('Stopped');
  outcome='uncertain';
  const response=await fetcher(config.url+'/api/services/light/'+r.action,{method:'POST',headers:{Authorization:'Bearer '+config.haToken,'Content-Type':'application/json'},body:JSON.stringify({entity_id:r.entity}),redirect:'error',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(8000)])});
- if(response.ok&&!controller.signal.aborted)outcome='succeeded';else if(!response.ok&&!controller.signal.aborted)outcome='failed';
+ if(response.ok&&!controller.signal.aborted)outcome='succeeded';
  }
  }catch{outcome='uncertain';}
  finally{active=null;tx(()=>{db.prepare('UPDATE automation_jobs SET state=? WHERE id=?').run(outcome,id);audit('execution_'+outcome,r.rule_id,id);});}
