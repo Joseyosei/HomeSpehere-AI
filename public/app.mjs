@@ -7,7 +7,7 @@ async function refresh(){
  if(busy)return;busy=true;
  const household=select.value||'demo',q='?household='+encodeURIComponent(household);
  try{
- const [latest,devices,connections]=await Promise.all([get('/api/latest'+q),get('/api/devices'+q),get('/api/integrations')]);
+ const [latest,devices,connections]=await Promise.all([get('/api/latest'+q),get('/api/devices'+q),get('/api/integrations').catch(()=>({}))]);
  const reading=metric=>{const rows=latest.filter(r=>r.metric===metric&&r.quality==='good'&&!r.stale&&devices.some(d=>d.id===r.device_id&&d.online));return rows.length===1?rows[0].value:null;};
  const data={powerW:reading('consumption'),solarW:reading('solar'),temperatureC:reading('temperature'),humidity:reading('humidity'),devices:devices.map(d=>({...d,online:Boolean(d.online)}))};
  const meters=[...new Set(latest.filter(r=>['consumption','solar','grid_import','grid_export'].includes(r.metric)).map(r=>r.device_id))];
@@ -25,4 +25,4 @@ async function refresh(){
  for(const d of data.devices){const row=add(deviceList,'li','');add(row,'span',d.name);add(row,'span',d.online?'Online':'Offline');}
  }catch{metrics.replaceChildren();panel.replaceChildren();status.replaceChildren();advice.replaceChildren();deviceList.replaceChildren();add(metrics,'p','Unable to load readings. Retrying…');}finally{busy=false;}
 }
-try{const homes=await get('/api/households');for(const h of homes){const o=add(select,'option',h.name);o.value=h.id;}select.value='demo';select.dispatchEvent(new Event('homes-ready'));select.addEventListener('change',refresh);await refresh();setInterval(refresh,5000);}catch{add(metrics,'p','Unable to connect to local server. Reload to retry.');}
+try{const homes=await get('/api/households');for(const h of homes){const o=add(select,'option',h.name);o.value=h.id;}select.value=homes[0]?.id??'';select.dispatchEvent(new Event('homes-ready'));select.addEventListener('change',refresh);await refresh();setInterval(refresh,5000);}catch{add(metrics,'p','Unable to connect to local server. Reload to retry.');}

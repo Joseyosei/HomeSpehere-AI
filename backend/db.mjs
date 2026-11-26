@@ -1,3 +1,4 @@
+import {migrateAuth} from './auth/schema.mjs';
 import {migrateAutomation} from './automation/schema.mjs';
 import {DatabaseSync} from 'node:sqlite';
 import {mkdirSync} from 'node:fs';
@@ -9,7 +10,7 @@ export function openDatabase(path='data/homesphere.sqlite'){
  db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL;');
  try{
  const version=db.prepare('PRAGMA user_version').get().user_version;
- if(version>2)throw Error('Unsupported database version');
+ if(version>3)throw Error('Unsupported database version');
  if(version===0)db.exec(`BEGIN IMMEDIATE;
  CREATE TABLE households(id TEXT PRIMARY KEY,name TEXT NOT NULL) STRICT;
  CREATE TABLE rooms(id TEXT PRIMARY KEY,household_id TEXT NOT NULL REFERENCES households(id),name TEXT NOT NULL,UNIQUE(id,household_id)) STRICT;
@@ -18,6 +19,7 @@ export function openDatabase(path='data/homesphere.sqlite'){
  CREATE INDEX readings_time ON readings(ts);
  PRAGMA user_version=1; COMMIT;`);
  if(version<2)migrateAutomation(db);
+ if(version<3)migrateAuth(db);
  return db;
  }catch(e){db.close();throw e;}
 }

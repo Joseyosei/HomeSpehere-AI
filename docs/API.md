@@ -22,3 +22,6 @@ GET /api/energy/tariff and GET /api/energy/report?household=demo&device=meter&pe
 
 ## Stage 08
 Automation administration uses authenticated local GET /api/automation and POST subroutes; see [automation](AUTOMATION.md). No unattended device actions.
+
+## Stage 09 (supersedes earlier unauthenticated API descriptions)
+All data APIs now require a valid session, household access and CSRF on writes. See [security](SECURITY.md).

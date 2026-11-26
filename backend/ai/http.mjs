@@ -1,7 +1,7 @@
 import {answerChat,validateChat} from './assistant.mjs';
 export function createAIHandler(db,config,options={}){
  let active=false,last=0;
- return async function(req,url){
+ return async function(req,url,authorize=()=>true){
  const fail=(status,error)=>({status,data:{error}});
  if(url.pathname==='/api/ai/status')return req.method==='GET'?{status:200,data:{enabled:config.enabled,mode:config.enabled?'ollama-with-local-fallback':'local-rules',model:config.enabled?config.model:null}}:fail(405,'Method not allowed');
  if(url.pathname!=='/api/ai/chat')return fail(404,'Not found');
@@ -16,6 +16,7 @@ export function createAIHandler(db,config,options={}){
  let size=0;const chunks=[];
  for await(const chunk of req){size+=chunk.length;if(size>16384)return fail(413,'Request too large');chunks.push(chunk);}
  let body;try{body=JSON.parse(Buffer.concat(chunks).toString('utf8'));validateChat(body);}catch{return fail(400,'Invalid chat request');}
+ if(!authorize(body.household))return fail(403,'Household access denied');
  const data=await answerChat(db,body,config,options);
  return data?{status:200,data}:fail(404,'Household not found');
  }finally{active=false;}
