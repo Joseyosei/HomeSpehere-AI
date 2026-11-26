@@ -19,3 +19,6 @@ GET /api/ai/status and POST /api/ai/chat (read-only household analysis, not devi
 
 ## Stage 07
 GET /api/energy/tariff and GET /api/energy/report?household=demo&device=meter&period=day (day or month). See [energy intelligence](ENERGY.md) for coverage and estimate limitations.
+
+## Stage 08
+Automation administration uses authenticated local GET /api/automation and POST subroutes; see [automation](AUTOMATION.md). No unattended device actions.

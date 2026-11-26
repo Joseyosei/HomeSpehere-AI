@@ -17,3 +17,6 @@ See [AI assistant setup and privacy](docs/AI.md). Local rules work without Ollam
 
 ## Stage 07
 See [energy intelligence](docs/ENERGY.md) for tariff setup, cost and carbon estimates, UTC charts and baseline forecasts. No rates are assumed.
+
+## Stage 08
+See [automation setup and safety](docs/AUTOMATION.md). Default disarmed, simulation only, every action manually approved. Live mode limited to explicitly allowlisted lights.

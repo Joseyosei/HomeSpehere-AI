@@ -7,15 +7,19 @@ import {startIntegrations} from './backend/integrations/index.mjs';
 import {aiConfig} from './backend/ai/assistant.mjs';
 import {createAIHandler} from './backend/ai/http.mjs';
 import {tariffConfig} from './backend/energy-intelligence.mjs';
+import {automationConfig,createEngine} from './backend/automation/engine.mjs';
+import {automationHandler} from './backend/automation/http.mjs';
 import {api} from './backend/api.mjs';
-const routes=new Map([['/',['index.html','text/html']],['/app.mjs',['app.mjs','text/javascript']],['/chat.mjs',['chat.mjs','text/javascript']],['/energy-report.mjs',['energy-report.mjs','text/javascript']],['/model.mjs',['model.mjs','text/javascript']],['/style.css',['style.css','text/css']]]);
-export function makeServer(db, integrationStatus={ha:{state:'disabled',discovered:[]},mqtt:{state:'disabled'}}, assistantConfig=aiConfig({}), energyTariff=tariffConfig()){
+const routes=new Map([['/',['index.html','text/html']],['/app.mjs',['app.mjs','text/javascript']],['/chat.mjs',['chat.mjs','text/javascript']],['/automation.mjs',['automation.mjs','text/javascript']],['/energy-report.mjs',['energy-report.mjs','text/javascript']],['/model.mjs',['model.mjs','text/javascript']],['/style.css',['style.css','text/css']]]);
+export function makeServer(db, integrationStatus={ha:{state:'disabled',discovered:[]},mqtt:{state:'disabled'}}, assistantConfig=aiConfig({}), energyTariff=tariffConfig(), automation=null, autoConfig=automationConfig()){
+ const autoHandler=automationHandler(automation,autoConfig);
  const aiHandler=createAIHandler(db,assistantConfig);
  return createServer(async(req,res)=>{
  const headers={'X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; object-src 'none'; frame-ancestors 'none'",'Cache-Control':'no-store'};
  const json=(status,data)=>res.writeHead(status,{...headers,'Content-Type':'application/json; charset=utf-8'}).end(JSON.stringify(data));
  try{
  const url=new URL(req.url,'http://127.0.0.1');
+ if(url.pathname==='/api/automation'||url.pathname.startsWith('/api/automation/')){const result=await autoHandler(req,url);return json(result.status,result.data);}
  if(url.pathname.startsWith('/api/ai/')){const result=await aiHandler(req,url);return json(result.status,result.data);}
  if(req.method!=='GET'){res.setHeader('Allow','GET');return json(405,{error:'Method not allowed'});}
  if(url.pathname==='/api/integrations')return json(200,integrationStatus);
@@ -31,8 +35,10 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  let integrations;try{integrations=await startIntegrations(db);}catch{db.close();console.error('Integration configuration/startup failed. Check local configuration.');process.exit(1);}
  let assistantConfig;try{assistantConfig=aiConfig();}catch{integrations.stop();db.close();console.error('Invalid local AI configuration.');process.exit(1);}
  let energyTariff;try{energyTariff=tariffConfig(process.env);}catch{integrations.stop();db.close();console.error('Invalid energy tariff configuration.');process.exit(1);}
- const server=makeServer(db,integrations.status,assistantConfig,energyTariff);
+ let autoConfig,automation;try{autoConfig=automationConfig(process.env);automation=createEngine(db,autoConfig);}catch{integrations.stop();db.close();console.error('Invalid automation configuration.');process.exit(1);}
+ const timer=setInterval(()=>{try{automation.tick();}catch{automation.emergency(true);console.error('Automation evaluation stopped.');}},10000);
+ const server=makeServer(db,integrations.status,assistantConfig,energyTariff,automation,autoConfig);
  server.requestTimeout=30000;
  server.listen(port,'127.0.0.1',()=>console.log('HomeSphere AI: http://127.0.0.1:'+server.address().port));
- for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{integrations.stop();server.close(()=>{db.close();});});
+ for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{clearInterval(timer);automation.stop();integrations.stop();server.close(()=>{db.close();});});
 }

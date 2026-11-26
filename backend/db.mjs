@@ -1,3 +1,4 @@
+import {migrateAutomation} from './automation/schema.mjs';
 import {DatabaseSync} from 'node:sqlite';
 import {mkdirSync} from 'node:fs';
 import {dirname} from 'node:path';
@@ -8,7 +9,7 @@ export function openDatabase(path='data/homesphere.sqlite'){
  db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL;');
  try{
  const version=db.prepare('PRAGMA user_version').get().user_version;
- if(version>1)throw Error('Unsupported database version');
+ if(version>2)throw Error('Unsupported database version');
  if(version===0)db.exec(`BEGIN IMMEDIATE;
  CREATE TABLE households(id TEXT PRIMARY KEY,name TEXT NOT NULL) STRICT;
  CREATE TABLE rooms(id TEXT PRIMARY KEY,household_id TEXT NOT NULL REFERENCES households(id),name TEXT NOT NULL,UNIQUE(id,household_id)) STRICT;
@@ -16,6 +17,7 @@ export function openDatabase(path='data/homesphere.sqlite'){
  CREATE TABLE readings(device_id TEXT NOT NULL REFERENCES devices(id),metric TEXT NOT NULL CHECK(metric IN('consumption','solar','grid_import','grid_export','temperature','humidity','battery')),ts INTEGER NOT NULL CHECK(ts>=0 AND ts<=253402300799999),value REAL,unit TEXT NOT NULL,quality TEXT NOT NULL CHECK(quality IN('good','missing','suspect')),CHECK((quality='missing' AND value IS NULL) OR (quality!='missing' AND value IS NOT NULL)),CHECK(value IS NULL OR abs(value)<=1000000000),CHECK((metric IN('consumption','solar','grid_import','grid_export') AND unit='W' AND (value IS NULL OR value>=0)) OR (metric='temperature' AND unit='C' AND (value IS NULL OR value>=-273.15)) OR (metric IN('humidity','battery') AND unit='%' AND (value IS NULL OR value BETWEEN 0 AND 100))),PRIMARY KEY(device_id,metric,ts)) STRICT;
  CREATE INDEX readings_time ON readings(ts);
  PRAGMA user_version=1; COMMIT;`);
+ if(version<2)migrateAutomation(db);
  return db;
  }catch(e){db.close();throw e;}
 }
