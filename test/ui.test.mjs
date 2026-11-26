@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {normalizePreferences,moveWidget,readPreferences,savePreferences,widgets} from '../public/preferences.mjs';
+import {iconPNG} from '../backend/ui-icons.mjs';
+import {openDatabase} from '../backend/db.mjs';
+import {makeServer} from '../server.mjs';
+test('layout preferences reject unknown fields and duplicate widgets',()=>{const p=normalizePreferences({theme:'invalid',order:['devices','devices','automation'],hidden:['overview','automation']});assert.equal(p.theme,'system');assert.equal(p.order[0],'devices');assert.equal(p.order.length,widgets.length);assert.deepEqual(p.hidden,['overview']);assert.equal(moveWidget(p,'devices',1).order[1],'devices');});
+test('preferences storage errors fall back safely',()=>{assert.equal(readPreferences({getItem(){throw Error();}}).theme,'system');assert.doesNotThrow(()=>savePreferences({setItem(){throw Error();}},{}));});
+test('PNG icon dimensions and signature',()=>{for(const n of [192,512]){const b=iconPNG(n);assert.equal(b.readUInt32BE(16),n);assert.equal(b.readUInt32BE(20),n);assert.equal(b[0],137);}});
+test('public PWA shell routes do not expose private APIs',async t=>{const db=openDatabase(':memory:'),s=makeServer(db);await new Promise(r=>s.listen(0,'127.0.0.1',r));t.after(async()=>{await new Promise(r=>s.close(r));db.close();});const base='http://127.0.0.1:'+s.address().port;const manifest=await fetch(base+'/manifest.webmanifest');assert.equal(manifest.status,200);assert.equal((await manifest.json()).display,'standalone');for(const p of ['/sw.js','/offline.html','/shell.mjs','/preferences.mjs','/icon-192.png','/icon-512.png'])assert.equal((await fetch(base+p)).status,200);assert.equal((await fetch(base+'/api/latest')).status,401);});

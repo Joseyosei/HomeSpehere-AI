@@ -23,3 +23,6 @@ See [automation setup and safety](docs/AUTOMATION.md). Default disarmed, simulat
 
 ## Stage 09
 First startup requires local owner setup. See [security setup](docs/SECURITY.md). Set HS_SETUP_TOKEN in .env and run npm run start:configured. Do not expose the server publicly.
+
+## Stage 10
+See [responsive interfaces and PWA](docs/INTERFACES.md). Browser UI tests: npx playwright install chromium; npm run test:ui. Physical devices need future secure LAN deployment.

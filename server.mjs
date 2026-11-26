@@ -11,8 +11,9 @@ import {automationConfig,createEngine} from './backend/automation/engine.mjs';
 import {automationHandler} from './backend/automation/http.mjs';
 import {authConfig,createAuth} from './backend/auth/service.mjs';
 import {authGuard} from './backend/auth/http.mjs';
+import {iconPNG} from './backend/ui-icons.mjs';
 import {api} from './backend/api.mjs';
-const routes=new Map([['/',['index.html','text/html']],['/app.mjs',['app.mjs','text/javascript']],['/auth.mjs',['auth.mjs','text/javascript']],['/chat.mjs',['chat.mjs','text/javascript']],['/automation.mjs',['automation.mjs','text/javascript']],['/energy-report.mjs',['energy-report.mjs','text/javascript']],['/model.mjs',['model.mjs','text/javascript']],['/style.css',['style.css','text/css']]]);
+const routes=new Map([['/',['index.html','text/html']],['/app.mjs',['app.mjs','text/javascript']],['/auth.mjs',['auth.mjs','text/javascript']],['/chat.mjs',['chat.mjs','text/javascript']],['/automation.mjs',['automation.mjs','text/javascript']],['/energy-report.mjs',['energy-report.mjs','text/javascript']],['/model.mjs',['model.mjs','text/javascript']],['/style.css',['style.css','text/css']],['/shell.mjs',['shell.mjs','text/javascript']],['/preferences.mjs',['preferences.mjs','text/javascript']],['/sw.js',['sw.js','text/javascript']],['/manifest.webmanifest',['manifest.webmanifest','application/manifest+json']],['/offline.html',['offline.html','text/html']]]);
 export function makeServer(db, integrationStatus={ha:{state:'disabled',discovered:[]},mqtt:{state:'disabled'}}, assistantConfig=aiConfig({}), energyTariff=tariffConfig(), automation=null, autoConfig=automationConfig(), securityConfig=authConfig()){
  const auth=createAuth(db,securityConfig),guard=authGuard(auth);
  const autoHandler=automationHandler(automation,autoConfig);
@@ -29,6 +30,7 @@ export function makeServer(db, integrationStatus={ha:{state:'disabled',discovere
  if(req.method!=='GET'){res.setHeader('Allow','GET');return json(405,{error:'Method not allowed'});}
  if(url.pathname==='/api/integrations')return json(200,integrationStatus);
  if(url.pathname.startsWith('/api/')){const result=api(db,url,Date.now(),energyTariff);return json(result.status,result.data);}
+ if(['/icon-192.png','/icon-512.png'].includes(url.pathname)){res.writeHead(200,{...headers,'Content-Type':'image/png'}).end(iconPNG(url.pathname.includes('192')?192:512));return;}
  const route=routes.get(url.pathname);if(!route)return json(404,{error:'Not found'});
  const data=await readFile(new URL('./public/'+route[0],import.meta.url));res.writeHead(200,{...headers,'Content-Type':route[1]+'; charset=utf-8'}).end(data);
  }catch(e){console.error(e.message);if(!res.headersSent)json(500,{error:'Internal server error'});else res.end();}
