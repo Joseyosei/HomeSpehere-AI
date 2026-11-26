@@ -12,10 +12,14 @@ import {automationHandler} from './backend/automation/http.mjs';
 import {authConfig,createAuth} from './backend/auth/service.mjs';
 import {authGuard} from './backend/auth/http.mjs';
 import {iconPNG} from './backend/ui-icons.mjs';
+import {mobileService} from './backend/mobile/service.mjs';
+import {gatewayConfig,makeGateway} from './backend/mobile/gateway.mjs';
+import {mobileAdmin} from './backend/mobile/admin.mjs';
 import {api} from './backend/api.mjs';
-const routes=new Map([['/',['index.html','text/html']],['/app.mjs',['app.mjs','text/javascript']],['/auth.mjs',['auth.mjs','text/javascript']],['/chat.mjs',['chat.mjs','text/javascript']],['/automation.mjs',['automation.mjs','text/javascript']],['/energy-report.mjs',['energy-report.mjs','text/javascript']],['/model.mjs',['model.mjs','text/javascript']],['/style.css',['style.css','text/css']],['/shell.mjs',['shell.mjs','text/javascript']],['/preferences.mjs',['preferences.mjs','text/javascript']],['/sw.js',['sw.js','text/javascript']],['/manifest.webmanifest',['manifest.webmanifest','application/manifest+json']],['/offline.html',['offline.html','text/html']]]);
-export function makeServer(db, integrationStatus={ha:{state:'disabled',discovered:[]},mqtt:{state:'disabled'}}, assistantConfig=aiConfig({}), energyTariff=tariffConfig(), automation=null, autoConfig=automationConfig(), securityConfig=authConfig()){
+const routes=new Map([['/',['index.html','text/html']],['/app.mjs',['app.mjs','text/javascript']],['/auth.mjs',['auth.mjs','text/javascript']],['/mobile-admin.mjs',['mobile-admin.mjs','text/javascript']],['/chat.mjs',['chat.mjs','text/javascript']],['/automation.mjs',['automation.mjs','text/javascript']],['/energy-report.mjs',['energy-report.mjs','text/javascript']],['/model.mjs',['model.mjs','text/javascript']],['/style.css',['style.css','text/css']],['/shell.mjs',['shell.mjs','text/javascript']],['/preferences.mjs',['preferences.mjs','text/javascript']],['/sw.js',['sw.js','text/javascript']],['/manifest.webmanifest',['manifest.webmanifest','application/manifest+json']],['/offline.html',['offline.html','text/html']]]);
+export function makeServer(db, integrationStatus={ha:{state:'disabled',discovered:[]},mqtt:{state:'disabled'}}, assistantConfig=aiConfig({}), energyTariff=tariffConfig(), automation=null, autoConfig=automationConfig(), securityConfig=authConfig(), mobileEnabled=false){
  const auth=createAuth(db,securityConfig),guard=authGuard(auth);
+ const mobile=mobileService(db);
  const autoHandler=automationHandler(automation,autoConfig);
  const aiHandler=createAIHandler(db,assistantConfig);
  return createServer(async(req,res)=>{
@@ -25,6 +29,7 @@ export function makeServer(db, integrationStatus={ha:{state:'disabled',discovere
  const url=new URL(req.url,'http://127.0.0.1');
  let session;
  if(url.pathname.startsWith('/api/')){const g=await guard(req,url,res);if(g.status)return json(g.status,g.data);session=g.session;}
+ if(url.pathname==='/api/mobile-admin'||url.pathname.startsWith('/api/mobile-admin/')){const result=await mobileAdmin(req,url,session,mobile,mobileEnabled);return json(result.status,result.data);}
  if(url.pathname==='/api/automation'||url.pathname.startsWith('/api/automation/')){const result=await autoHandler(req,url);return json(result.status,result.data);}
  if(url.pathname.startsWith('/api/ai/')){const result=await aiHandler(req,url,h=>{const allowed=auth.allowed(session,h);if(!allowed)auth.audit('household_denied',session.id);return allowed;});return json(result.status,result.data);}
  if(req.method!=='GET'){res.setHeader('Allow','GET');return json(405,{error:'Method not allowed'});}
@@ -45,8 +50,9 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  let autoConfig,automation;try{autoConfig=automationConfig(process.env);automation=createEngine(db,autoConfig);}catch{integrations.stop();db.close();console.error('Invalid automation configuration.');process.exit(1);}
  const timer=setInterval(()=>{try{automation.tick();}catch{automation.emergency(true);console.error('Automation evaluation stopped.');}},10000);
  let securityConfig;try{securityConfig=authConfig(process.env);}catch{clearInterval(timer);automation.stop();integrations.stop();db.close();console.error('Invalid security configuration.');process.exit(1);}
- const server=makeServer(db,integrations.status,assistantConfig,energyTariff,automation,autoConfig,securityConfig);
+ let gateway=null;try{const cfg=gatewayConfig(process.env);if(cfg){gateway=makeGateway(db,cfg,energyTariff);await new Promise((resolve,reject)=>{gateway.once('error',reject);gateway.listen(cfg.port,cfg.host,resolve);});console.log('Mobile gateway listening: '+cfg.origin);}}catch{clearInterval(timer);automation.stop();integrations.stop();db.close();console.error('Mobile gateway startup failed. Check TLS and network configuration.');process.exit(1);}
+ const server=makeServer(db,integrations.status,assistantConfig,energyTariff,automation,autoConfig,securityConfig,!!gateway);
  server.requestTimeout=30000;
  server.listen(port,'127.0.0.1',()=>console.log('HomeSphere AI: http://127.0.0.1:'+server.address().port));
- for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{clearInterval(timer);automation.stop();integrations.stop();server.close(()=>{db.close();});});
+ for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{clearInterval(timer);automation.stop();integrations.stop();const close=()=>server.close(()=>{db.close();});if(gateway)gateway.close(close);else close();});
 }

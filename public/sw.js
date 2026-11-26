@@ -1,5 +1,5 @@
-const CACHE='homesphere-shell-v0.8.0';
-const SHELL=['/','/style.css','/auth.mjs','/shell.mjs','/preferences.mjs','/app.mjs','/model.mjs','/chat.mjs','/energy-report.mjs','/automation.mjs','/manifest.webmanifest','/icon-192.png','/icon-512.png','/offline.html'];
+const CACHE='homesphere-shell-v0.9.1';
+const SHELL=['/','/style.css','/auth.mjs','/mobile-admin.mjs','/shell.mjs','/preferences.mjs','/app.mjs','/model.mjs','/chat.mjs','/energy-report.mjs','/automation.mjs','/manifest.webmanifest','/icon-192.png','/icon-512.png','/offline.html'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL))));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('homesphere-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{

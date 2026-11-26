@@ -32,3 +32,6 @@ See [release package](docs/RELEASE.md). Public preview is isolated in preview/ a
 
 ## Stage 14
 Native mobile foundation in mobile/ (Expo). See [mobile and home setup](docs/MOBILE.md). Demo only until secure pairing gateway is implemented.
+
+## Stage 15
+Owner-authorised native pairing and separate TLS gateway. See [mobile pairing](docs/MOBILE-PAIRING.md). Disabled by default; no physical-device commands.

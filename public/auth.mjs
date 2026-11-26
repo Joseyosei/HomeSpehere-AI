@@ -20,6 +20,7 @@ if(status.authenticated){
  document.querySelector('#auth-who').textContent=status.user.email+' · '+status.user.role;
  document.querySelector('#auth-logout').onclick=async()=>{try{await post('/api/auth/logout',{});location.reload();}catch(e){message.textContent=e.message;}};
  if(status.user.role==='owner'){
+ await import('./mobile-admin.mjs');
  const invite=document.querySelector('#auth-invite');invite.hidden=false;
  invite.onsubmit=async e=>{e.preventDefault();const d=formData(invite);try{await post('/api/auth/register',{email:d.email,password:d.password,households:d.households.split(',').map(s=>s.trim()).filter(Boolean)});invite.reset();message.textContent='Viewer created.';}catch(e){message.textContent=e.message;}};
  document.querySelector('#auth-audit-button').hidden=false;

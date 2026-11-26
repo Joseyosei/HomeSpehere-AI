@@ -2,16 +2,21 @@
   "expo": {
     "name": "HomeSphere AI",
     "slug": "homesphere-ai",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.homesphere.ai",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "Connect to your trusted HomeSphere home gateway."
+      }
     },
     "android": {
       "package": "com.homesphere.ai"
     },
-    "plugins": []
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }
