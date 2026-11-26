@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "HomeSphere AI",
+    "slug": "homesphere-ai",
+    "version": "0.1.0",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.homesphere.ai",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.homesphere.ai"
+    },
+    "plugins": []
+  }
+}

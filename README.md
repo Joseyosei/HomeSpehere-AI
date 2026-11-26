@@ -29,3 +29,6 @@ See [responsive interfaces and PWA](docs/INTERFACES.md). Browser UI tests: npx p
 
 ## Stages 11–13
 See [release package](docs/RELEASE.md). Public preview is isolated in preview/ and never connects to real household APIs. npm run benchmark; npm run backup -- SOURCE NEW_DESTINATION.
+
+## Stage 14
+Native mobile foundation in mobile/ (Expo). See [mobile and home setup](docs/MOBILE.md). Demo only until secure pairing gateway is implemented.
