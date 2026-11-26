@@ -25,4 +25,4 @@ async function refresh(){
  for(const d of data.devices){const row=add(deviceList,'li','');add(row,'span',d.name);add(row,'span',d.online?'Online':'Offline');}
  }catch{metrics.replaceChildren();panel.replaceChildren();status.replaceChildren();advice.replaceChildren();deviceList.replaceChildren();add(metrics,'p','Unable to load readings. Retrying…');}finally{busy=false;}
 }
-try{const homes=await get('/api/households');for(const h of homes){const o=add(select,'option',h.name);o.value=h.id;}select.value='demo';select.addEventListener('change',refresh);await refresh();setInterval(refresh,5000);}catch{add(metrics,'p','Unable to connect to local server. Reload to retry.');}
+try{const homes=await get('/api/households');for(const h of homes){const o=add(select,'option',h.name);o.value=h.id;}select.value='demo';select.dispatchEvent(new Event('homes-ready'));select.addEventListener('change',refresh);await refresh();setInterval(refresh,5000);}catch{add(metrics,'p','Unable to connect to local server. Reload to retry.');}

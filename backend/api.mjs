@@ -1,4 +1,5 @@
 import {history,metrics} from './db.mjs';
+import {energyReport,tariffConfig} from './energy-intelligence.mjs';
 import {energySummary} from './energy.mjs';
 const DAY=86400000;
 function range(q,now){
@@ -7,10 +8,11 @@ function range(q,now){
  if(from>=to||to-from>31*DAY)throw Error('Range must be positive and at most 31 days');
  return {from,to};
 }
-export function api(db,url,now=Date.now()){
+export function api(db,url,now=Date.now(),tariff=tariffConfig()){
  const q=url.searchParams;
  const ok=data=>({status:200,data});
  const fail=(status,error)=>({status,data:{error}});
+ if(url.pathname==='/api/energy/tariff')return ok(tariff);
  if(url.pathname==='/api/health')return ok({status:'ok',schema:db.prepare('PRAGMA user_version').get().user_version});
  if(url.pathname==='/api/households')return ok(db.prepare('SELECT * FROM households ORDER BY id').all());
  const household=q.get('household')??'demo';
@@ -19,6 +21,10 @@ export function api(db,url,now=Date.now()){
  if(url.pathname==='/api/devices')return ok(db.prepare('SELECT * FROM devices WHERE household_id=? ORDER BY id').all(household));
  if(url.pathname==='/api/latest'){
  return ok(db.prepare(`SELECT d.id AS device_id,d.source,r.metric,r.ts,r.value,r.unit,r.quality FROM devices d JOIN readings r ON r.device_id=d.id WHERE d.household_id=? AND r.ts=(SELECT max(x.ts) FROM readings x WHERE x.device_id=r.device_id AND x.metric=r.metric) ORDER BY d.id,r.metric`).all(household).map(r=>({...r,stale:now-r.ts>1800000})));
+ }
+ if(url.pathname==='/api/energy/report'){
+ const period=q.get('period')??'day';if(!['day','month'].includes(period))return fail(400,'Invalid period');
+ try{const report=energyReport(db,{household,device:q.get('device')??'meter',period,now,tariff});return report?ok(report):fail(404,'Device not found');}catch(e){if(e.message==='Too many readings for analytics')return fail(422,e.message);throw e;}
  }
  if(!['/api/history','/api/energy'].includes(url.pathname))return fail(404,'Not found');
  const device=q.get('device')??'meter';

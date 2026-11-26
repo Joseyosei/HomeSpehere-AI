@@ -14,3 +14,6 @@ See [integration setup](docs/INTEGRATIONS.md). Use npm install and npm run start
 
 ## Stage 06
 See [AI assistant setup and privacy](docs/AI.md). Local rules work without Ollama. Enable local inference explicitly in .env.
+
+## Stage 07
+See [energy intelligence](docs/ENERGY.md) for tariff setup, cost and carbon estimates, UTC charts and baseline forecasts. No rates are assumed.

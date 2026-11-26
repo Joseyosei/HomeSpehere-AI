@@ -16,3 +16,6 @@ GET /api/integrations returns redacted adapter status and HA sensor candidates, 
 
 ## Stage 06
 GET /api/ai/status and POST /api/ai/chat (read-only household analysis, not device mutation). See [AI](AI.md) for request and response limits. Other endpoints remain GET-only.
+
+## Stage 07
+GET /api/energy/tariff and GET /api/energy/report?household=demo&device=meter&period=day (day or month). See [energy intelligence](ENERGY.md) for coverage and estimate limitations.
