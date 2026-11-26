@@ -13,3 +13,6 @@ History inclusive bounds, ordered ascending, default last 24 hours, maximum 31 d
 
 ## Stage 05
 GET /api/integrations returns redacted adapter status and HA sensor candidates, not credentials or endpoints. Live household ID is live; live device IDs are live- plus configured device ID. Same read-only routes apply.
+
+## Stage 06
+GET /api/ai/status and POST /api/ai/chat (read-only household analysis, not device mutation). See [AI](AI.md) for request and response limits. Other endpoints remain GET-only.
