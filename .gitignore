@@ -4,3 +4,9 @@ node_modules/
 data/
 !.env.example
 *.secret
+
+playwright-report/
+test-results/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

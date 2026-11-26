@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync,rmSync,readFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {openDatabase} from '../backend/db.mjs';
+import {seedDemo} from '../backend/seed.mjs';
+import {snapshot} from '../scripts/backup.mjs';
+test('consistent backup and restore preserves rows and rejects overwrite',async()=>{const dir=mkdtempSync(join(tmpdir(),'hs-release-'));const source=join(dir,'source.sqlite'),dest=join(dir,'copy.sqlite');let db;try{db=openDatabase(source);seedDemo(db);await snapshot(source,dest);const copy=openDatabase(dest);try{assert.equal(copy.prepare('SELECT count(*) n FROM readings').get().n,582);assert.equal(copy.prepare('PRAGMA user_version').get().user_version,3);}finally{copy.close();}await assert.rejects(snapshot(source,dest));}finally{db?.close();rmSync(dir,{recursive:true,force:true});}});
+test('hosted demo has no private backend routes or credential fields',()=>{const html=readFileSync(new URL('../preview/index.html',import.meta.url),'utf8'),js=readFileSync(new URL('../preview/demo.mjs',import.meta.url),'utf8');assert.match(html,/Synthetic demo/);assert.doesNotMatch(html,/type="password"/);assert.doesNotMatch(js,/fetch\(|\/api\/|Authorization/);});

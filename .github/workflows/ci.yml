@@ -15,5 +15,7 @@ jobs:
           node-version: '22'
       - run: npm install --ignore-scripts
       - run: npm test
+      - run: npm run benchmark
+      - run: npm audit --omit=dev --audit-level=high
       - run: npx playwright install --with-deps chromium
       - run: npm run test:ui

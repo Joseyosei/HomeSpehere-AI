@@ -26,3 +26,6 @@ First startup requires local owner setup. See [security setup](docs/SECURITY.md)
 
 ## Stage 10
 See [responsive interfaces and PWA](docs/INTERFACES.md). Browser UI tests: npx playwright install chromium; npm run test:ui. Physical devices need future secure LAN deployment.
+
+## Stages 11–13
+See [release package](docs/RELEASE.md). Public preview is isolated in preview/ and never connects to real household APIs. npm run benchmark; npm run backup -- SOURCE NEW_DESTINATION.

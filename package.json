@@ -1,6 +1,6 @@
 {
   "name": "homesphere-ai",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -11,7 +11,9 @@
     "test": "node --test test/*.test.mjs",
     "seed": "node backend/seed.mjs",
     "start:configured": "node --env-file=.env server.mjs",
-    "test:ui": "playwright test ui-tests/dashboard.spec.mjs --workers=1"
+    "test:ui": "playwright test ui-tests/dashboard.spec.mjs --workers=1",
+    "benchmark": "node scripts/benchmark.mjs",
+    "backup": "node scripts/backup.mjs"
   },
   "dependencies": {
     "mqtt": "^5.16.0"
