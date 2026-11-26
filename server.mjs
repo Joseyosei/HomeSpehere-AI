@@ -1,11 +1,27 @@
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
-const routes = new Map([['/',['index.html','text/html']],['/app.mjs',['app.mjs','text/javascript']],['/model.mjs',['model.mjs','text/javascript']],['/style.css',['style.css','text/css']]]);
-const server = createServer(async (req,res)=>{
+import {pathToFileURL} from 'node:url';
+import {openDatabase} from './backend/db.mjs';
+import {seedDemo} from './backend/seed.mjs';
+import {api} from './backend/api.mjs';
+const routes=new Map([['/',['index.html','text/html']],['/app.mjs',['app.mjs','text/javascript']],['/model.mjs',['model.mjs','text/javascript']],['/style.css',['style.css','text/css']]]);
+export function makeServer(db){
+ return createServer(async(req,res)=>{
  const headers={'X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; object-src 'none'; frame-ancestors 'none'",'Cache-Control':'no-store'};
- const route=routes.get(req.url);
- if(req.method!=='GET'||!route){res.writeHead(404,headers).end();return;}
- try {const data=await readFile(new URL('./public/'+route[0],import.meta.url));res.writeHead(200,{...headers,'Content-Type':route[1]+'; charset=utf-8'}).end(data);}
- catch {res.writeHead(500,headers).end('Unable to load dashboard');}
-});
-server.listen(8780,'127.0.0.1',()=>console.log('HomeSphere AI: http://127.0.0.1:8780'));
+ const json=(status,data)=>res.writeHead(status,{...headers,'Content-Type':'application/json; charset=utf-8'}).end(JSON.stringify(data));
+ try{
+ const url=new URL(req.url,'http://127.0.0.1');
+ if(req.method!=='GET'){res.setHeader('Allow','GET');return json(405,{error:'Method not allowed'});}
+ if(url.pathname.startsWith('/api/')){const result=api(db,url);return json(result.status,result.data);}
+ const route=routes.get(url.pathname);if(!route)return json(404,{error:'Not found'});
+ const data=await readFile(new URL('./public/'+route[0],import.meta.url));res.writeHead(200,{...headers,'Content-Type':route[1]+'; charset=utf-8'}).end(data);
+ }catch(e){console.error(e.message);if(!res.headersSent)json(500,{error:'Internal server error'});else res.end();}
+ });
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
+ const db=openDatabase(process.env.DB_PATH);seedDemo(db);
+ const port=Number(process.env.PORT??8780);
+ const server=makeServer(db);
+ server.listen(port,'127.0.0.1',()=>console.log('HomeSphere AI: http://127.0.0.1:'+server.address().port));
+ for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>server.close(()=>{db.close();}));
+}
